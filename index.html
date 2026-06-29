@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>대통령의 무게 — 대한민국 현대사 시뮬레이션</title>
+  <meta name="description" content="1953년 전쟁의 폐허에서 시작해 대한민국 대통령으로서 굵직한 결정을 내리는 클릭형 현대사 시뮬레이션. 당신의 선택이 나라의 운명을 만듭니다." />
+  <meta name="theme-color" content="#0d0f14" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="대통령의 무게 — 대한민국 현대사 시뮬레이션" />
+  <meta property="og:description" content="폐허에서 선진국까지, 당신의 선택으로 대한민국의 70년을 다시 씁니다." />
+  <meta property="og:type" content="website" />
+
+  <!-- Fonts: Pretendard (본문) + Nanum Myeongjo (제목, 드라마틱) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#app">본문으로 건너뛰기</a>
+
+  <!-- 시대 배경 레이어 (시대별 색으로 전환) -->
+  <div class="bg-layer" id="bgLayer" aria-hidden="true">
+    <div class="bg-grain"></div>
+  </div>
+
+  <main id="app" class="app" aria-live="polite">
+    <!-- 화면은 js/game.js가 렌더링합니다 -->
+    <noscript>
+      <div class="noscript">
+        <h1>대통령의 무게</h1>
+        <p>이 게임을 즐기려면 JavaScript를 활성화해주세요.</p>
+      </div>
+    </noscript>
+  </main>
+
+  <footer class="site-footer" id="siteFooter">
+    <span>대한민국 현대사 시뮬레이션 · 교육·체험 목적의 가상 시나리오</span>
+  </footer>
+
+  <!-- 게임 데이터 (정적, AI 토큰 불필요) → 엔진 -->
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
