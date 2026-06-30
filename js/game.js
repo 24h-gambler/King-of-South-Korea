@@ -1,495 +1,366 @@
 /* ============================================================
-   대통령의 무게 — 게임 엔진
-   순수 바닐라 JS. 외부 의존성 없음. AI 토큰 불필요.
-   GAME_DATA(js/data.js)를 읽어 화면을 렌더링한다.
-   ============================================================ */
+ * 대통령의 무게 — 게임 엔진 (바닐라 JS · 외부 의존성 없음)
+ * 시대별 카드를 클릭해 6대 지표를 키우고, 만들어진 나라에 따라
+ * 서로 다른 결말(멀티 엔딩)에 도달한다.
+ * ============================================================ */
 (function () {
   "use strict";
 
   var DATA = (typeof GAME_DATA !== "undefined") ? GAME_DATA : null;
   var app = document.getElementById("app");
-  var bgLayer = document.getElementById("bgLayer");
 
   if (!DATA) {
-    app.innerHTML = '<div class="card"><h1 class="title-l">데이터를 불러오지 못했습니다</h1>' +
-      '<p class="lead">js/data.js 가 로드되지 않았습니다.</p></div>';
+    app.innerHTML = '<div class="card"><h1 class="title-l">데이터를 불러오지 못했습니다</h1></div>';
     return;
   }
 
-  // ---------- 지표 정의 ----------
-  var STAT_KEYS = ["economy", "democracy", "livelihood", "security", "standing"];
-  var STAT_META = {}; // key -> {label, icon, description}
-  (DATA.meta.stats || []).forEach(function (s) { STAT_META[s.key] = s; });
-  // 메타에 빠진 항목 대비 기본값
-  var STAT_FALLBACK = {
-    economy:   { label: "경제력",  icon: "📈", description: "산업·소득·성장" },
-    democracy: { label: "민주주의", icon: "🕊️", description: "자유·인권·참여" },
-    livelihood:{ label: "민생",    icon: "🍚", description: "국민의 삶과 행복" },
-    security:  { label: "안보",    icon: "🛡️", description: "국방과 안전" },
-    standing:  { label: "국제위상", icon: "🌏", description: "세계 속 대한민국" }
-  };
-  STAT_KEYS.forEach(function (k) {
-    if (!STAT_META[k]) STAT_META[k] = Object.assign({ key: k }, STAT_FALLBACK[k]);
-  });
+  var M = DATA.meta;
+  var STATS = M.stats;                 // [{key,label,icon,color}]
+  var STAT_KEYS = STATS.map(function (s) { return s.key; });
+  var SMETA = {}; STATS.forEach(function (s) { SMETA[s.key] = s; });
+  var ERA = {}; M.eras.forEach(function (e) { ERA[e.id] = e; });
+  var CARDS = DATA.cards;
+  var TOTAL = CARDS.length;
 
-  // ---------- 시대 테마 ----------
-  var ERA_THEME = {};
-  (DATA.meta.eraThemes || []).forEach(function (t) { ERA_THEME[t.eraId] = t; });
-
-  // ---------- 1953년: 전쟁의 폐허에서 시작 ----------
-  var START_STATS = { economy: 12, democracy: 28, livelihood: 16, security: 30, standing: 18 };
-
-  var FLAG_INFO = {
-    inflation: { txt: "물가 급등", cls: "warn", ic: "💸" },
-    protest:   { txt: "시위 발생", cls: "bad",  ic: "✊" },
-    coup_risk: { txt: "정변의 그림자", cls: "bad", ic: "⚠️" },
-    crisis:    { txt: "국가 위기", cls: "bad", ic: "🔥" },
-    reform:    { txt: "개혁 추진", cls: "good", ic: "⚖️" },
-    growth:    { txt: "성장 가속", cls: "good", ic: "🚀" },
-    diplomacy: { txt: "외교 성과", cls: "good", ic: "🤝" }
-  };
-
-  // ---------- 게임 상태 ----------
   var state = null;
-  function newState() {
+  function newState(nation) {
     return {
-      stats: Object.assign({}, START_STATS),
-      eraIdx: 0,
-      scenIdx: 0,
-      log: [],          // {year, title, eraName, choiceLabel, eraId}
-      flagsSeen: {}
+      nation: nation || M.defaultNation,
+      stats: Object.assign({}, M.start),
+      idx: 0,                 // 현재 카드 인덱스
+      eraShown: {},           // 시대 인트로 표시 여부
+      log: [],                // {era, title, label}
+      flags: {}
     };
   }
 
   function clamp(v) { return Math.max(0, Math.min(100, v)); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function prefersReduced() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function scrollTop() { window.scrollTo({ top: 0, behavior: prefersReduced() ? "auto" : "smooth" }); }
+  function setFooter(show) { var f = document.getElementById("siteFooter"); if (f) f.style.display = show ? "" : "none"; }
 
   function applyTheme(eraId) {
-    var t = ERA_THEME[eraId];
-    var root = document.documentElement;
-    if (t) {
-      root.style.setProperty("--era-primary", t.primary);
-      root.style.setProperty("--era-secondary", t.secondary);
-      root.style.setProperty("--era-bg", t.bg);
-      var tc = themeColorMeta();
-      if (tc) tc.setAttribute("content", t.bg);
-    }
-  }
-  function themeColorMeta() { return document.querySelector('meta[name="theme-color"]'); }
-
-  function esc(s) {
-    return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    var t = ERA[eraId]; if (!t) return;
+    var r = document.documentElement;
+    r.style.setProperty("--era-primary", t.primary);
+    r.style.setProperty("--era-secondary", t.secondary);
+    r.style.setProperty("--era-bg", t.bg);
+    var tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute("content", t.bg);
   }
 
-  function scrollTop() {
-    window.scrollTo({ top: 0, behavior: (prefersReduced() ? "auto" : "smooth") });
-  }
-  function prefersReduced() {
-    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }
-
-  // ============================================================
-  //  HUD
-  // ============================================================
+  // ---------- HUD ----------
   function hudHTML() {
-    var era = DATA.eras[state.eraIdx];
-    var total = era.scenarios.length;
-    var prog = "";
-    for (var i = 0; i < total; i++) {
-      var cls = i < state.scenIdx ? "done" : (i === state.scenIdx ? "current" : "");
-      prog += '<i class="' + cls + '"></i>';
-    }
-    var statsHTML = STAT_KEYS.map(function (k) {
-      var m = STAT_META[k];
-      var v = Math.round(state.stats[k]);
-      return '' +
-        '<div class="stat" data-k="' + k + '">' +
-          '<div class="stat-head"><span class="ic">' + m.icon + '</span>' +
-            '<span class="label-text">' + esc(m.label) + '</span>' +
-            '<span class="v" id="v-' + k + '">' + v + '</span>' +
-          '</div>' +
-          '<div class="stat-bar"><span id="bar-' + k + '" style="width:' + v + '%"></span></div>' +
-          '<span class="delta" id="d-' + k + '"></span>' +
+    var card = CARDS[state.idx] || CARDS[CARDS.length - 1];
+    var era = ERA[card.era];
+    var done = state.idx, pct = Math.round((done / TOTAL) * 100);
+    var chips = STAT_KEYS.map(function (k) {
+      var m = SMETA[k], v = Math.round(state.stats[k]);
+      return '<div class="chip" data-k="' + k + '" style="--cc:' + m.color + '">' +
+          '<span class="chip-ic">' + m.icon + '</span>' +
+          '<span class="chip-v" id="v-' + k + '">' + v + '</span>' +
+          '<span class="chip-l">' + esc(m.label) + '</span>' +
+          '<span class="chip-bar"><i id="bar-' + k + '" style="width:' + v + '%"></i></span>' +
+          '<span class="chip-d" id="d-' + k + '"></span>' +
         '</div>';
     }).join("");
-
-    return '' +
-      '<div class="hud" id="hud">' +
+    return '<div class="hud" id="hud">' +
         '<div class="hud-top">' +
-          '<div><span class="hud-era">' + esc(era.eraName) + '</span> ' +
-            '<span class="hud-year">' + esc(era.yearRange) + '</span></div>' +
-          '<div class="hud-progress">' + prog + '</div>' +
+          '<span class="hud-nation">🇰🇷 ' + esc(state.nation) + '</span>' +
+          '<span class="hud-era">' + esc(era.name) + ' · ' + esc(era.years) + '</span>' +
+          '<span class="hud-turn">' + (done + 1) + '/' + TOTAL + '</span>' +
         '</div>' +
-        '<div class="stats">' + statsHTML + '</div>' +
+        '<div class="hud-track"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="chips">' + chips + '</div>' +
       '</div>';
   }
-
-  // HUD 바를 현재 stats에 맞춰 즉시 동기화
   function syncHud() {
     STAT_KEYS.forEach(function (k) {
-      var bar = document.getElementById("bar-" + k);
-      var num = document.getElementById("v-" + k);
+      var bar = document.getElementById("bar-" + k), num = document.getElementById("v-" + k);
       if (bar) bar.style.width = Math.round(state.stats[k]) + "%";
       if (num) num.textContent = Math.round(state.stats[k]);
     });
   }
-
-  // 효과 적용 + 애니메이션
-  function animateEffects(effects) {
+  function animateEffects(eff) {
     STAT_KEYS.forEach(function (k) {
-      var d = effects && effects[k] ? effects[k] : 0;
-      var before = state.stats[k];
-      var after = clamp(before + d);
-      state.stats[k] = after;
-      var bar = document.getElementById("bar-" + k);
-      var num = document.getElementById("v-" + k);
-      var dEl = document.getElementById("d-" + k);
-      if (bar) bar.style.width = Math.round(after) + "%";
-      if (num) {
-        num.textContent = Math.round(after);
-        num.classList.remove("flash"); void num.offsetWidth; if (d !== 0) num.classList.add("flash");
-      }
-      if (dEl && d !== 0) {
-        dEl.textContent = (d > 0 ? "+" : "") + d;
-        dEl.className = "delta " + (d > 0 ? "up" : "down");
-        void dEl.offsetWidth;
-        dEl.classList.add("show");
-      }
+      var d = eff && eff[k] ? eff[k] : 0;
+      state.stats[k] = clamp(state.stats[k] + d);
+      var bar = document.getElementById("bar-" + k), num = document.getElementById("v-" + k), dEl = document.getElementById("d-" + k);
+      if (bar) bar.style.width = Math.round(state.stats[k]) + "%";
+      if (num) { num.textContent = Math.round(state.stats[k]); if (d) { num.classList.remove("flash"); void num.offsetWidth; num.classList.add("flash"); } }
+      if (dEl && d) { dEl.textContent = (d > 0 ? "+" : "") + d; dEl.className = "chip-d " + (d > 0 ? "up" : "down"); void dEl.offsetWidth; dEl.classList.add("show"); }
     });
   }
 
   // ============================================================
-  //  화면: 시작
+  //  시작 화면
   // ============================================================
   function renderStart() {
     setFooter(true);
     applyTheme("era1");
-    var m = DATA.meta;
-    var howto = (m.howToPlay || []).map(function (h, i) {
-      return '<li><span class="n">' + (i + 1) + '</span><span>' + esc(h) + '</span></li>';
-    }).join("");
-
     app.innerHTML = '' +
       '<section class="screen start">' +
         '<div class="crest">🇰🇷</div>' +
-        '<div class="eyebrow">대한민국 현대사 시뮬레이션</div>' +
-        '<h1 class="title-xl">' + esc(m.title) + '</h1>' +
-        '<div class="subtitle">' + esc(m.subtitle) + '</div>' +
-        '<p class="tagline">' + esc(m.tagline) + '</p>' +
-        '<div class="intro-narration">' + esc(m.introNarration) + '</div>' +
-        (howto ? '<ul class="howto">' + howto + '</ul>' : "") +
-        '<div class="actions center" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-lg" id="startBtn">1953년, 대통령이 되어 시작하기</button>' +
+        '<h1 class="title-xl">' + esc(M.title) + '</h1>' +
+        '<p class="tagline">' + esc(M.tagline) + '</p>' +
+        '<p class="start-intro">' + esc(M.intro) + '</p>' +
+        '<div class="nation-field">' +
+          '<label for="nationInput">세울 나라의 이름</label>' +
+          '<input id="nationInput" type="text" maxlength="12" value="' + esc(M.defaultNation) + '" autocomplete="off" />' +
         '</div>' +
-        '<p class="muted" style="margin-top:22px;font-size:12.5px">실존 사건을 모티브로 한 가상 시나리오입니다. 특정 정파를 지지·비판하지 않습니다.</p>' +
+        '<button class="btn btn-primary btn-lg btn-block" id="startBtn">건국을 시작한다</button>' +
+        '<p class="start-hint">클릭으로 선택하고, 지표를 키워 당신만의 나라를 만드세요.<br>같은 시대라도, 당신의 손에서 전혀 다른 나라가 태어납니다.</p>' +
       '</section>';
 
-    document.getElementById("startBtn").addEventListener("click", function () {
-      state = newState();
-      renderEraIntro();
-    });
+    var input = document.getElementById("nationInput");
+    var go = function () {
+      var name = (input.value || "").trim() || M.defaultNation;
+      state = newState(name);
+      renderFlow();
+    };
+    document.getElementById("startBtn").addEventListener("click", go);
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
     scrollTop();
   }
 
   // ============================================================
-  //  화면: 시대 인트로
+  //  흐름 제어: 시대 인트로 → 카드들 → 다음 시대 → 엔딩
   // ============================================================
-  function renderEraIntro() {
-    setFooter(false);
-    var era = DATA.eras[state.eraIdx];
-    applyTheme(era.eraId);
-    var theme = ERA_THEME[era.eraId] || {};
-    var no = ["제1막", "제2막", "제3막", "제4막", "제5막"][state.eraIdx] || ("제" + (state.eraIdx + 1) + "막");
+  function renderFlow() {
+    if (state.idx >= CARDS.length) { renderEnding(); return; }
+    var card = CARDS[state.idx];
+    if (!state.eraShown[card.era]) { renderEraIntro(card.era); return; }
+    renderCard(card);
+  }
 
+  function renderEraIntro(eraId) {
+    setFooter(false);
+    applyTheme(eraId);
+    var e = ERA[eraId];
+    var num = M.eras.findIndex(function (x) { return x.id === eraId; }) + 1;
     app.innerHTML = '' +
       '<section class="screen era-intro">' +
-        '<div class="era-no">' + no + '</div>' +
-        '<h2 class="title-l">' + esc(era.eraName) + '</h2>' +
-        '<div class="years">' + esc(era.yearRange) + '</div>' +
-        (theme.mood ? '<div class="mood">' + esc(theme.mood) + '</div>' : "") +
-        '<p class="narration">' + esc(era.intro) + '</p>' +
-        '<div class="actions center" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-lg" id="goBtn">집무를 시작한다</button>' +
-        '</div>' +
+        '<div class="era-no">제 ' + num + ' 시대</div>' +
+        '<div class="years">' + esc(e.years) + '</div>' +
+        '<h2 class="title-l">' + esc(e.name) + '</h2>' +
+        '<div class="mood">' + esc(e.tag) + '</div>' +
+        '<button class="btn btn-primary btn-lg" id="goBtn">시대를 연다</button>' +
       '</section>';
-
     document.getElementById("goBtn").addEventListener("click", function () {
-      state.scenIdx = 0;
-      renderScenario();
+      state.eraShown[eraId] = true;
+      renderFlow();
     });
     scrollTop();
   }
 
-  // ============================================================
-  //  화면: 시나리오
-  // ============================================================
-  function renderScenario() {
+  function renderCard(card) {
     setFooter(false);
-    var era = DATA.eras[state.eraIdx];
-    var scen = era.scenarios[state.scenIdx];
-    applyTheme(era.eraId);
-
-    var choicesHTML = scen.choices.map(function (c, i) {
-      return '' +
-        '<button class="choice" data-i="' + i + '">' +
-          '<div class="c-label">' + esc(c.label) + '</div>' +
-          '<div class="c-detail">' + esc(c.detail) + '</div>' +
-        '</button>';
+    applyTheme(card.era);
+    var isDip = card.type === "diplomacy";
+    var choices = card.choices.map(function (c, i) {
+      return '<button class="choice" data-i="' + i + '"><span class="c-label">' + esc(c.label) + '</span></button>';
     }).join("");
 
     app.innerHTML = '' +
       hudHTML() +
-      '<section class="screen scenario">' +
-        '<div class="card">' +
-          '<div class="scen-head">' +
-            '<span class="scen-year">' + esc(scen.year) + '</span>' +
-            '<h2 class="title-l">' + esc(scen.title) + '</h2>' +
-          '</div>' +
-          '<p class="situation">' + esc(scen.situation) + '</p>' +
-          (scen.history ? '<div class="history-note"><b>📜 실제 역사</b> · ' + esc(scen.history) + '</div>' : "") +
-          '<div class="choices">' + choicesHTML + '</div>' +
+      '<section class="screen card-screen">' +
+        '<div class="card ' + (isDip ? "card-dip" : "") + '">' +
+          (isDip ? '<div class="dip-tag">📨 ' + esc(card.country) + '</div>' : '<div class="dec-tag">국가 현안</div>') +
+          '<h2 class="card-title">' + esc(card.title) + '</h2>' +
+          '<p class="situation' + (isDip ? ' is-quote' : '') + '">' + esc(card.situation) + '</p>' +
+          '<div class="choices" id="choices">' + choices + '</div>' +
+          '<div class="result" id="result" hidden></div>' +
         '</div>' +
-        '<p class="muted center" style="margin-top:14px;font-size:12.5px">선택은 되돌릴 수 없습니다. 신중히 결정하세요.</p>' +
       '</section>';
 
     syncHud();
     var btns = app.querySelectorAll(".choice");
     btns.forEach(function (b) {
       b.addEventListener("click", function () {
-        var idx = parseInt(b.getAttribute("data-i"), 10);
-        btns.forEach(function (x) { x.setAttribute("disabled", "true"); });
-        chooseOption(scen, idx);
+        var i = parseInt(b.getAttribute("data-i"), 10);
+        choose(card, i);
       });
     });
     scrollTop();
   }
 
-  function chooseOption(scen, idx) {
-    var era = DATA.eras[state.eraIdx];
-    var choice = scen.choices[idx];
+  function choose(card, i) {
+    var c = card.choices[i];
+    var era = ERA[card.era];
+    state.log.push({ era: card.era, title: card.title, label: c.label });
+    (c.flags || []).forEach(function (f) { state.flags[f] = true; });
 
-    // 로그 기록
-    state.log.push({
-      eraId: era.eraId, eraName: era.eraName,
-      year: scen.year, title: scen.title, choiceLabel: choice.label
+    // 효과 적용 (애니메이션)
+    var delay = prefersReduced() ? 0 : 260;
+    setTimeout(function () { animateEffects(c.effects); }, delay);
+
+    // 인라인 결과로 전환
+    var eff = c.effects || {};
+    var deltaChips = STAT_KEYS.filter(function (k) { return eff[k]; }).map(function (k) {
+      var d = eff[k];
+      return '<span class="rd ' + (d > 0 ? "up" : "down") + '">' + SMETA[k].icon + ' ' + (d > 0 ? "+" : "") + d + '</span>';
+    }).join("");
+
+    var reactionHTML = c.reaction ?
+      '<div class="reaction"><span class="r-who">' + esc(c.reaction.who) + '</span><span class="r-text">“' + esc(c.reaction.text) + '”</span></div>' : "";
+
+    var choicesEl = document.getElementById("choices");
+    var resultEl = document.getElementById("result");
+    choicesEl.style.display = "none";
+    resultEl.hidden = false;
+    resultEl.innerHTML = '' +
+      '<div class="r-chosen">▶ ' + esc(c.label) + '</div>' +
+      '<p class="r-text-main">' + esc(c.result) + '</p>' +
+      (deltaChips ? '<div class="r-deltas">' + deltaChips + '</div>' : "") +
+      reactionHTML +
+      '<button class="btn btn-primary btn-block" id="nextBtn" style="margin-top:14px">' + nextLabel() + '</button>';
+
+    document.getElementById("nextBtn").addEventListener("click", function () {
+      state.idx++;
+      renderFlow();
     });
-    (choice.flags || []).forEach(function (f) { state.flagsSeen[f] = (state.flagsSeen[f] || 0) + 1; });
 
-    renderOutcome(scen, choice);
-  }
-
-  // ============================================================
-  //  화면: 결과
-  // ============================================================
-  function renderOutcome(scen, choice) {
-    setFooter(false);
-    var era = DATA.eras[state.eraIdx];
-    var eff = choice.effects || {};
-
-    var deltaChips = STAT_KEYS.map(function (k) {
-      var d = eff[k] || 0;
-      var cls = d > 0 ? "up" : (d < 0 ? "down" : "zero");
-      var sign = d > 0 ? "+" : "";
-      return '<div class="delta-chip"><div class="dk">' + STAT_META[k].icon + ' ' + esc(STAT_META[k].label) +
-        '</div><div class="dv ' + cls + '">' + (d === 0 ? "—" : sign + d) + '</div></div>';
-    }).join("");
-
-    var flagsHTML = (choice.flags || []).map(function (f) {
-      var info = FLAG_INFO[f];
-      if (!info) return "";
-      return '<span class="flag ' + info.cls + '">' + info.ic + " " + esc(info.txt) + "</span>";
-    }).join("");
-
-    app.innerHTML = '' +
-      hudHTML() +
-      '<section class="screen outcome">' +
-        '<div class="card stagger">' +
-          '<div class="chosen">당신의 결정 · <b>' + esc(choice.label) + '</b></div>' +
-          '<div class="headline">' + esc(choice.headline) + '</div>' +
-          '<p class="outcome-text">' + esc(choice.outcome) + '</p>' +
-          (flagsHTML ? '<div class="flags">' + flagsHTML + '</div>' : "") +
-          '<div class="delta-grid">' + deltaChips + '</div>' +
-          '<div class="reactions">' +
-            '<div class="react"><span class="ic">🧑‍🤝‍🧑</span><div><div class="who">국민의 반응</div>' +
-              '<div class="what">' + esc(choice.citizenReaction) + '</div></div></div>' +
-            '<div class="react"><span class="ic">🌐</span><div><div class="who">국제사회의 반응</div>' +
-              '<div class="what">' + esc(choice.foreignReaction) + '</div></div></div>' +
-          '</div>' +
-          '<hr class="divider" />' +
-          '<div class="actions" style="justify-content:flex-end">' +
-            '<button class="btn btn-primary" id="nextBtn">' + nextLabel() + '</button>' +
-          '</div>' +
-        '</div>' +
-      '</section>';
-
-    syncHud();
-    // 결과 화면 진입 후 지표 애니메이션
-    var t = prefersReduced() ? 0 : 360;
-    setTimeout(function () { animateEffects(eff); }, t);
-
-    document.getElementById("nextBtn").addEventListener("click", advance);
-    scrollTop();
+    // 결과 영역으로 부드럽게
+    if (!prefersReduced()) resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function nextLabel() {
-    var era = DATA.eras[state.eraIdx];
-    if (state.scenIdx < era.scenarios.length - 1) return "다음 사안 →";
-    if (state.eraIdx < DATA.eras.length - 1) return "다음 시대로 →";
-    return "임기를 마치며 →";
-  }
-
-  function advance() {
-    var era = DATA.eras[state.eraIdx];
-    if (state.scenIdx < era.scenarios.length - 1) {
-      state.scenIdx++;
-      renderScenario();
-    } else if (state.eraIdx < DATA.eras.length - 1) {
-      state.eraIdx++;
-      state.scenIdx = 0;
-      renderEraIntro();
-    } else {
-      renderEnding();
-    }
+    var next = CARDS[state.idx + 1];
+    if (!next) return "임기를 마친다 →";
+    var cur = CARDS[state.idx];
+    if (next.era !== cur.era) return "다음 시대로 →";
+    return "다음 →";
   }
 
   // ============================================================
-  //  점수 & 엔딩
+  //  멀티 엔딩 선택
   // ============================================================
-  // 가중 종합점수: 경제·민생 비중을 높이되, 민주주의·위상도 핵심.
-  // 균형 보너스/불균형 페널티로 '한쪽만 키운 나라'를 견제.
-  function computeScore() {
-    var s = state.stats;
-    var weights = { economy: 0.24, livelihood: 0.24, democracy: 0.20, standing: 0.18, security: 0.14 };
-    var base = 0;
-    STAT_KEYS.forEach(function (k) { base += s[k] * weights[k]; });
-
+  function avgStat() {
+    var s = 0; STAT_KEYS.forEach(function (k) { s += state.stats[k]; });
+    return s / STAT_KEYS.length;
+  }
+  function pickEndingId() {
+    var s = state.stats, f = state.flags;
+    var eco = s.economy, dem = s.democracy, wel = s.welfare, def = s.defense, dip = s.diplomacy, tech = s.tech;
     var vals = STAT_KEYS.map(function (k) { return s[k]; });
+    var avg = avgStat();
     var min = Math.min.apply(null, vals);
-    var max = Math.max.apply(null, vals);
-    var spread = max - min;
 
-    // 불균형이 크면 감점(최대 -10), 고르게 높으면 가점(최대 +6)
-    var penalty = spread > 45 ? Math.min(10, (spread - 45) * 0.4) : 0;
-    var bonus = (min >= 55) ? Math.min(6, (min - 55) * 0.3) : 0;
+    // 바닥: 붕괴 / 빈곤 (미래를 포기하면 더 깊이 무너진다)
+    if (avg < 30 || (f.decline && avg < 42)) return "collapse";
+    if (avg < 40) return "poor";
 
-    var score = base - penalty + bonus;
-    // 어느 지표든 바닥(15 미만)이면 상한을 눌러 위기를 반영
-    if (min < 15) score = Math.min(score, 38);
-    else if (min < 25) score = Math.min(score, 58);
+    // 부유해도 자유가 짓밟혔다면 디스토피아 (긍정 엔딩보다 우선)
+    if (dem < 24 && eco >= 50) return "authoritarian";
+    if (def >= 74 && avg < 60 && dem < 50) return "garrison";
 
-    return Math.max(0, Math.min(100, Math.round(score)));
-  }
+    // 최상위 특수 엔딩 — 자유와 균형을 함께 요구
+    if (tech >= 85 && eco >= 82 && avg >= 72 && dem >= 50) return "ai_super";
+    if (avg >= 76 && min >= 56) return "leader";
+    if (f.unify && avg >= 60 && dem >= 42 && eco >= 45) return "unified";
+    if (tech >= 78 && eco >= 70 && dem >= 42 && tech >= wel) return "tech";
+    if (dem >= 76 && wel >= 74) return "welfare";
 
-  function pickEnding(score) {
-    var endings = (DATA.meta.endings || []).slice().sort(function (a, b) { return b.minScore - a.minScore; });
-    for (var i = 0; i < endings.length; i++) {
-      if (score >= endings[i].minScore) return endings[i];
-    }
-    return endings[endings.length - 1];
+    // 중간 불균형 엔딩
+    if (dip < 28) return "isolated";
+    if (def >= 72 && avg < 58) return "garrison";
+    if (eco >= 66 && dem < 44) return "authoritarian";
+    if (eco >= 64 && wel < 38) return "unequal";
+
+    // 일반 등급
+    if (avg >= 66) return "balanced";
+    if (avg >= 48) return "developing";
+    return "poor";
   }
 
   function renderEnding() {
     setFooter(true);
     applyTheme("era5");
-    var score = computeScore();
-    var ending = pickEnding(score) || {};
-    var m = DATA.meta;
+    var id = pickEndingId();
+    var end = M.endings[id] || M.endings.developing;
+    var avg = Math.round(avgStat());
 
     var finalStats = STAT_KEYS.map(function (k) {
-      return '<div class="fs"><div class="ic">' + STAT_META[k].icon + '</div>' +
-        '<div class="v">' + Math.round(state.stats[k]) + '</div>' +
-        '<div class="l">' + esc(STAT_META[k].label) + '</div></div>';
+      return '<div class="fs" style="--cc:' + SMETA[k].color + '">' +
+        '<div class="fs-ic">' + SMETA[k].icon + '</div>' +
+        '<div class="fs-v">' + Math.round(state.stats[k]) + '</div>' +
+        '<div class="fs-l">' + esc(SMETA[k].label) + '</div></div>';
     }).join("");
 
-    var timeline = state.log.map(function (e) {
-      return '<div class="tl-item"><div class="tl-year">' + esc(e.year) + ' · ' + esc(e.eraName) + '</div>' +
-        '<div class="tl-title">' + esc(e.title) + '</div>' +
-        '<div class="tl-choice">→ ' + esc(e.choiceLabel) + '</div></div>';
+    // 시대별 회고: 실제 역사 vs 당신의 선택
+    var compare = M.eras.map(function (e, i) {
+      var picks = state.log.filter(function (l) { return l.era === e.id; })
+        .map(function (l) { return esc(l.label); }).join(" · ");
+      var real = (M.realHistory[i] && M.realHistory[i].line) || "";
+      return '<div class="cmp">' +
+          '<div class="cmp-era">' + esc(e.name) + ' <span>' + esc(e.years) + '</span></div>' +
+          '<div class="cmp-you"><b>당신의 선택</b> ' + (picks || "—") + '</div>' +
+          '<div class="cmp-real"><b>실제 역사</b> ' + real + '</div>' +
+        '</div>';
     }).join("");
-
-    var closingParas = String(m.closingMessage || "").split(/\n+/).filter(Boolean)
-      .map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("");
-    if (!closingParas && m.closingMessage) closingParas = '<p>' + esc(m.closingMessage) + '</p>';
 
     app.innerHTML = '' +
       '<section class="screen ending">' +
-        '<div class="card">' +
-          '<div class="eyebrow">' + esc(m.subtitle || "대한민국 현대사 시뮬레이션") + '</div>' +
-          '<div class="tier-badge">' + esc(ending.tier || "결과") + '</div>' +
-          '<h2 class="title-l">' + esc(ending.title || "임기를 마쳤습니다") + '</h2>' +
-          '<div class="score-ring" id="ring" style="--val:0"><div class="num"><b id="scoreNum">0</b><span>종합 평가</span></div></div>' +
-          '<p class="verdict">' + esc(ending.verdict || "") + '</p>' +
+        '<div class="card ending-hero">' +
+          '<div class="end-emoji">' + (end.emoji || "🏛️") + '</div>' +
+          '<div class="eyebrow">' + esc(state.nation) + ' · 최종 보고</div>' +
+          '<h2 class="title-xl end-title">' + esc(end.title) + '</h2>' +
+          '<p class="end-verdict">' + esc(end.verdict) + '</p>' +
+          '<div class="power"><span class="power-v">' + avg + '</span><span class="power-l">종합 국력</span></div>' +
           '<div class="final-stats">' + finalStats + '</div>' +
-          (ending.narrative ? '<p class="narrative">' + esc(ending.narrative) + '</p>' : "") +
+          '<p class="end-desc">' + esc(end.desc) + '</p>' +
         '</div>' +
 
-        '<div class="card" style="margin-top:16px">' +
-          '<h3 class="title-m" style="text-align:center;margin-bottom:6px">당신이 걸어온 길</h3>' +
-          '<p class="muted center" style="font-size:13px;margin-bottom:14px">임기 동안 내린 결정들</p>' +
-          '<div class="timeline">' + timeline + '</div>' +
+        '<div class="card" style="margin-top:14px">' +
+          '<h3 class="title-m center" style="margin-bottom:4px">당신의 길, 그리고 실제 역사</h3>' +
+          '<p class="muted center" style="font-size:13px;margin-bottom:14px">당신이 만든 나라와, 진짜 대한민국이 걸어온 길</p>' +
+          '<div class="compare">' + compare + '</div>' +
         '</div>' +
-
-        (m.realHistoryNote ? '<div class="real-history"><div class="label">📊 실제 대한민국의 궤적</div>' + esc(m.realHistoryNote) + '</div>' : "") +
 
         '<div class="reflection-box">' +
           '<div class="label">대통령의 무게</div>' +
-          (ending.reflection ? '<p><b>' + esc(ending.reflection) + '</b></p>' : "") +
-          closingParas +
+          '<p>' + esc(M.closing) + '</p>' +
         '</div>' +
 
         '<div class="share-row">' +
-          '<button class="btn btn-primary" id="againBtn">다시, 1953년으로</button>' +
+          '<button class="btn btn-primary" id="againBtn">다른 나라를 세워본다</button>' +
           '<button class="btn btn-ghost" id="copyBtn">결과 복사</button>' +
         '</div>' +
-        '<p class="muted center" style="margin-top:18px;font-size:12.5px">고생하셨습니다, 대통령님.</p>' +
+        '<p class="muted center" style="margin-top:16px;font-size:12.5px">고생하셨습니다, 대통령님.</p>' +
       '</section>';
 
-    // 점수 링 애니메이션
-    var ring = document.getElementById("ring");
-    var num = document.getElementById("scoreNum");
-    if (prefersReduced()) {
-      ring.style.setProperty("--val", score); num.textContent = score;
-    } else {
-      var cur = 0;
-      var step = Math.max(1, Math.round(score / 40));
-      var iv = setInterval(function () {
-        cur += step;
-        if (cur >= score) { cur = score; clearInterval(iv); }
-        ring.style.setProperty("--val", cur);
-        num.textContent = cur;
-      }, 28);
+    // 종합 국력 카운트업
+    var pv = app.querySelector(".power-v");
+    if (pv) {
+      if (prefersReduced()) { pv.textContent = avg; }
+      else {
+        var cur = 0, step = Math.max(1, Math.round(avg / 40));
+        var iv = setInterval(function () { cur += step; if (cur >= avg) { cur = avg; clearInterval(iv); } pv.textContent = cur; }, 26);
+      }
     }
 
     document.getElementById("againBtn").addEventListener("click", renderStart);
     document.getElementById("copyBtn").addEventListener("click", function () {
-      var txt = "[" + (DATA.meta.title || "대통령의 무게") + "] 종합 평가 " + score + "점 — " +
-        (ending.tier || "") + ". " + STAT_KEYS.map(function (k) {
-          return STAT_META[k].label + " " + Math.round(state.stats[k]);
-        }).join(", ");
+      var txt = "[" + M.title + "] " + state.nation + " — " + end.title + " (종합 국력 " + avg + ") · " +
+        STAT_KEYS.map(function (k) { return SMETA[k].label + Math.round(state.stats[k]); }).join(" ");
       copyText(txt, this);
     });
     scrollTop();
   }
 
   function copyText(txt, btn) {
-    var done = function () { var o = btn.textContent; btn.textContent = "복사됨 ✓"; setTimeout(function () { btn.textContent = o; }, 1500); };
+    var done = function () { var o = btn.textContent; btn.textContent = "복사됨 ✓"; setTimeout(function () { btn.textContent = o; }, 1400); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt); done(); });
     } else { fallbackCopy(txt); done(); }
   }
   function fallbackCopy(txt) {
-    var ta = document.createElement("textarea");
-    ta.value = txt; document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); } catch (e) {}
-    document.body.removeChild(ta);
+    var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(ta);
   }
 
-  function setFooter(show) {
-    var f = document.getElementById("siteFooter");
-    if (f) f.style.display = show ? "" : "none";
-  }
-
-  // ---------- 시작 ----------
   renderStart();
 })();
