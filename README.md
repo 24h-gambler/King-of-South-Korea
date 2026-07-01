@@ -20,7 +20,8 @@
 실제 역사를 그대로 따라가지 않습니다. **당신의 선택대로** 나라가 변합니다.
 
 - **6개 국가 지표**(💰경제·🏛️민주·🌾민생·🛡️국방·🤝외교·🔬기술)가 모든 선택에 트레이드오프로 반응합니다. 하나를 얻으면 하나를 잃습니다.
-- 중간중간 **🇺🇸🇰🇵🇨🇳🇯🇵 다른 나라와의 외교 카드**가 끼어들어, 강대국과 손잡거나 맞서야 합니다.
+- 카드는 **🏛️국정 현안 · 📨외교 · 🗣️시민의 목소리 · ✊거리의 함성(시위) · 🎎문화·교류** 다섯 종류. 강대국(🇺🇸🇰🇵🇨🇳🇯🇵…)과 손잡거나 맞서고, 굶주린 엄마·지친 노동자·광장의 청년이 직접 당신에게 말을 겁니다.
+- 선택지마다 **누군가의 한마디**(당신의 속마음·젊은 관료·차가운 참모…)가 붙어, 결정의 무게를 함께 느끼게 합니다.
 - 결말은 누적된 선택의 합으로 갈립니다. **13가지 멀티 엔딩** — 무너진 나라·가난의 굴레·부유한 철권국가부터, 단단한 선진국·통일 강국·**미국마저 넘어선 AI 초강국**까지.
 - 게임이 끝나면, **당신이 만든 나라와 실제 대한민국이 걸어온 길을 시대별로 나란히** 비교하며, 이 나라가 여기까지 온 것이 얼마나 어려운 일이었는지 되새깁니다.
 
@@ -74,18 +75,23 @@ const GAME_DATA = {
     stats: [{ key, label, icon, color }],        // 6개 지표
     start: { economy, democracy, welfare, defense, diplomacy, tech },
     eras:  [{ id, name, years, tag, primary, secondary, bg }],
-    realHistory: [{ era, line }],                // 엔딩에서 비교로 보여줄 실제 역사
+    realTimeline: [{ era, years, lines: [] }],   // 엔딩 '두 개의 연대기'에서 보여줄 실제 대한민국
     closing,
     endings: { id: { emoji, title, verdict, desc } }  // 멀티 엔딩
   },
   cards: [{
-    era, type: "decision" | "diplomacy", country, title, situation,
+    era,
+    type: "decision" | "diplomacy" | "voice" | "protest" | "culture",
+    country,   // diplomacy/culture: 상대국 (예: "🇺🇸 미국")
+    speaker,   // voice/protest: 말하는 사람 (예: "👩 세 아이의 엄마")
+    title, situation,
     choices: [{
       label,
+      sub,       // 이입용 한마디 (예: "“각하, 아이들이 밥을 굶고 있습니다.”")
       effects: { economy, democracy, welfare, defense, diplomacy, tech },  // -25~25
       result,
-      reaction: { who, text },   // 선택 시 다른 나라의 반응 (선택)
-      flags: ["unify", "decline", ...]   // 엔딩 판정용 (선택)
+      reaction: { who, text },   // 선택 시 상대의 반응 (선택)
+      flags: ["unify", "decline", "tech", "green", ...]   // 엔딩 판정용 (선택)
     }]
   }]
 };
