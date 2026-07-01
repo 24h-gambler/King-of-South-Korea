@@ -15,37 +15,37 @@ const GAME_DATA = {
         "key": "economy",
         "label": "경제",
         "icon": "💰",
-        "color": "#f2c14e"
+        "color": "#d8b26a"
       },
       {
         "key": "democracy",
         "label": "민주",
         "icon": "🏛️",
-        "color": "#c77dff"
+        "color": "#a9a2d6"
       },
       {
         "key": "welfare",
         "label": "민생",
         "icon": "🌾",
-        "color": "#5cd6a0"
+        "color": "#78c69e"
       },
       {
         "key": "defense",
         "label": "국방",
         "icon": "🛡️",
-        "color": "#ff8a5c"
+        "color": "#d99a7a"
       },
       {
         "key": "diplomacy",
         "label": "외교",
         "icon": "🤝",
-        "color": "#4ea1ff"
+        "color": "#7ea8d8"
       },
       {
         "key": "tech",
         "label": "기술",
         "icon": "🔬",
-        "color": "#22d3ee"
+        "color": "#7cc3cc"
       }
     ],
     "start": {
@@ -62,45 +62,45 @@ const GAME_DATA = {
         "name": "전후 복구",
         "years": "1953",
         "tag": "잿더미 위에서",
-        "primary": "#b08d57",
-        "secondary": "#6b5536",
-        "bg": "#15110c"
+        "primary": "#c2a274",
+        "secondary": "#977e5a",
+        "bg": "#131210"
       },
       {
         "id": "era2",
         "name": "산업화",
         "years": "1960s",
         "tag": "성장의 엔진",
-        "primary": "#e08a3c",
-        "secondary": "#a55a1f",
-        "bg": "#1a120a"
+        "primary": "#cba46a",
+        "secondary": "#9e8053",
+        "bg": "#14120e"
       },
       {
         "id": "era3",
         "name": "격동의 시대",
         "years": "1980s",
         "tag": "광장의 함성",
-        "primary": "#e0556b",
-        "secondary": "#a52f45",
-        "bg": "#180d12"
+        "primary": "#c78a92",
+        "secondary": "#9b6c72",
+        "bg": "#150f11"
       },
       {
         "id": "era4",
         "name": "정보화",
         "years": "2000s",
         "tag": "디지털의 빛",
-        "primary": "#4ea1ff",
-        "secondary": "#2f5fa5",
-        "bg": "#0a1322"
+        "primary": "#7ea8d8",
+        "secondary": "#6283a8",
+        "bg": "#0d1017"
       },
       {
         "id": "era5",
         "name": "다음 100년",
         "years": "2025~",
         "tag": "미래로",
-        "primary": "#9b7dff",
-        "secondary": "#5b3fb0",
-        "bg": "#0d0a1f"
+        "primary": "#9b93c9",
+        "secondary": "#79739d",
+        "bg": "#100f18"
       }
     ],
     "realTimeline": [
