@@ -40,18 +40,27 @@ python3 -m http.server 8000
 
 ## 🌐 무료 배포
 
-정적 사이트이므로 아래 어디서든 **무료**로 운영할 수 있습니다.
+빌드가 필요 없는 정적 사이트라, 아래 어디서든 **무료**로 올릴 수 있습니다.
 
-### GitHub Pages (가장 간단)
-1. 저장소 **Settings → Pages**
-2. **Source: Deploy from a branch** 선택
-3. 브랜치와 `/ (root)` 폴더 지정 후 저장
-4. 잠시 뒤 `https://<사용자>.github.io/<저장소>/` 에서 공개됩니다
+### Vercel (권장)
+저장소에 `vercel.json`이 포함되어 있어 별도 설정 없이 바로 배포됩니다.
 
-이 저장소에는 GitHub Pages 자동 배포용 워크플로(`.github/workflows/pages.yml`)도 포함되어 있어, **Settings → Pages → Source: GitHub Actions** 로 설정하면 푸시할 때마다 자동 배포됩니다.
+- **대시보드**: [vercel.com/new](https://vercel.com/new) → 이 저장소 Import → **Framework Preset: Other**, **Build Command·Output Directory 비워 둠** → Deploy. 끝.
+- **CLI**: 저장소 루트에서
+  ```bash
+  npm i -g vercel
+  vercel        # 미리보기 배포
+  vercel --prod # 프로덕션 배포
+  ```
+- 이후 이 브랜치에 푸시할 때마다 자동으로 새로 배포됩니다.
+
+### GitHub Pages
+1. 저장소 **Settings → Pages → Source: GitHub Actions**
+2. 포함된 워크플로(`.github/workflows/pages.yml`)가 푸시마다 자동 배포합니다
+3. 또는 **Deploy from a branch → `/ (root)`** 로도 가능합니다
 
 ### 그 밖에
-- **Vercel / Netlify / Cloudflare Pages** — 저장소를 연결만 하면 됩니다 (빌드 명령 없음, 출력 디렉터리 = 루트)
+- **Netlify / Cloudflare Pages** — 저장소만 연결하면 됩니다 (빌드 명령 없음, 게시 디렉터리 = 루트)
 
 ---
 
