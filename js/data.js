@@ -313,7 +313,7 @@ const GAME_DATA = {
       "speaker": "👩 세 아이의 엄마",
       "choices": [
         {
-          "label": "당장 죽솥부터",
+          "label": "죽솥부터 건다",
           "sub": "“아이를 굶겨 죽이는 나라가 무슨 나랍니까.” — 당신의 속마음",
           "effects": {
             "economy": -6,
@@ -527,7 +527,7 @@ const GAME_DATA = {
       "speaker": "👦 열 살 전쟁고아",
       "choices": [
         {
-          "label": "천막 학교를",
+          "label": "천막 학교를 연다",
           "sub": "“글 배운 아이가, 무너진 나라를 다시 세웁니다.” — 늙은 선생님",
           "effects": {
             "economy": -5,
@@ -580,7 +580,7 @@ const GAME_DATA = {
       "situation": "밤에도 불이 꺼지지 않는 공장이 하나둘 늘어난다. 당신 책상엔 두툼한 계획서가 놓였다. 나라의 힘을, 어디에 몰아줄까?",
       "choices": [
         {
-          "label": "수출 공장에",
+          "label": "수출 공장을 짓는다",
           "sub": "“싸게 만들어 많이 팔면, 없던 돈이 굴러 들어옵니다.” — 젊은 관료",
           "effects": {
             "economy": 18,
@@ -918,7 +918,7 @@ const GAME_DATA = {
           ]
         },
         {
-          "label": "덮고 위로만",
+          "label": "조용히 덮는다",
           "sub": "\"괜히 옛일 들추면 또 시끄러워집니다.\" — 보좌관",
           "effects": {
             "democracy": -8,
@@ -1264,7 +1264,7 @@ const GAME_DATA = {
           ]
         },
         {
-          "label": "딱 필요한 만큼만",
+          "label": "필요한 만큼만 쓴다",
           "sub": "\"넘치지도 모자라지도 않게요. 어려운 건 저도 압니다.\" — 살림 담당관",
           "effects": {
             "economy": 3,
@@ -1575,7 +1575,7 @@ const GAME_DATA = {
       "speaker": "",
       "choices": [
         {
-          "label": "해와 바람으로",
+          "label": "해와 바람으로 바꾼다",
           "sub": "“우리 아이들에게 맑은 하늘을 물려줍시다. 지금 바꿔야 해요.” — 피켓을 든 학생",
           "effects": {
             "economy": -10,
@@ -1590,7 +1590,7 @@ const GAME_DATA = {
           ]
         },
         {
-          "label": "값싼 힘부터",
+          "label": "값싼 힘부터 쓴다",
           "sub": "“당장 공장이 돌아야 사람이 먹고삽니다. 좋은 말은 나중에요.” — 전기료 걱정하는 공장 사장",
           "effects": {
             "economy": 14,

@@ -47,7 +47,7 @@ body {
   margin: 0; font-family: var(--font); background: var(--bg); color: var(--ink);
   font-size: 16.5px; line-height: 1.72; letter-spacing: -0.003em;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
-  word-break: keep-all; overflow-wrap: anywhere;
+  word-break: keep-all; overflow-wrap: anywhere; text-wrap: pretty;
   min-height: 100dvh; display: flex; flex-direction: column; overflow-x: hidden;
 }
 
@@ -113,20 +113,20 @@ h1, h2, h3 { font-family: var(--font); line-height: 1.28; margin: 0; letter-spac
 }
 .hud-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-bottom: 9px; min-width: 0; }
 .hud-nation { flex: 1 1 100%; font-weight: 800; color: var(--ink); font-size: 15px; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; min-width: 0; }
-.hud-era { font-size: 12.5px; color: var(--era-primary); font-weight: 700; min-width: 0; }
-.hud-turn { margin-left: auto; font-size: 12.5px; color: var(--ink-mute); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hud-era { font-size: 12.5px; color: var(--era-primary); font-weight: 800; min-width: 0; }
+.hud-turn { margin-left: auto; font-size: 12.5px; color: var(--ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
 .hud-track { height: 4px; border-radius: 3px; background: var(--surface-3); overflow: hidden; margin-bottom: 11px; }
 .hud-track > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .6s ease; }
 
 .chips { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
 .chip { position: relative; min-width: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 3px 7px; text-align: center; box-shadow: var(--shadow-s); }
-.chip-ic { display: block; font-size: 14px; line-height: 1; }
+.chip-ic { display: block; font-size: 14px; line-height: 1; filter: grayscale(1); opacity: .85; }
 .chip-v { font-weight: 800; font-size: 16px; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--ink); }
 .chip-v.flash { animation: flash .8s ease; }
-@keyframes flash { 0%,100% { color: var(--ink); } 40% { color: var(--cc); } }
+@keyframes flash { 0%,100% { color: var(--ink); } 40% { color: var(--accent); } }
 .chip-l { display: block; font-size: 10.5px; line-height: 1.15; color: var(--ink-mute); font-weight: 600; white-space: nowrap; letter-spacing: -0.02em; }
-.chip-bar { display: block; height: 4px; border-radius: 3px; background: var(--surface-3); overflow: hidden; margin-top: 5px; }
-.chip-bar > i { display: block; height: 100%; background: var(--cc); width: 0; transition: width .85s cubic-bezier(.22,.61,.36,1); }
+.chip-bar { display: block; height: 4px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 9%, var(--surface-3)); overflow: hidden; margin-top: 5px; }
+.chip-bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .85s cubic-bezier(.22,.61,.36,1); }
 .chip-d { position: absolute; top: 2px; right: 4px; font-size: 10.5px; font-weight: 800; font-variant-numeric: tabular-nums; opacity: 0; }
 .chip-d.up { color: var(--good); } .chip-d.down { color: var(--bad); }
 .chip-d.show { animation: dPop 1.7s ease forwards; }
@@ -148,7 +148,7 @@ h1, h2, h3 { font-family: var(--font); line-height: 1.28; margin: 0; letter-spac
 }
 .nation-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
 .start .btn-block { max-width: 340px; margin: 0 auto; }
-.start .start-hint { color: var(--ink-mute); font-size: 13px; line-height: 1.7; margin: 20px auto 0; max-width: 36ch; }
+.start .start-hint { color: var(--ink-soft); font-size: 13.5px; line-height: 1.7; margin: 20px auto 0; max-width: 36ch; }
 
 /* ============================================================
    시대 인트로
@@ -162,7 +162,7 @@ h1, h2, h3 { font-family: var(--font); line-height: 1.28; margin: 0; letter-spac
 /* ============================================================
    카드 (현안/외교/시민의목소리/시위/문화) — 태그는 하나의 통일된 룩
    ============================================================ */
-.card-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 800; padding: 5px 12px; border-radius: 999px; margin-bottom: 13px; max-width: 100%; background: var(--surface-3); color: var(--ink-soft); border: 1px solid var(--line); }
+.card-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 800; padding: 5px 12px; border-radius: 999px; margin-bottom: 13px; max-width: 100%; background: var(--accent-tint); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line)); }
 /* 카드 종류는 왼쪽 강조선 색으로만 은은히 구분 */
 .card { border-left: 4px solid var(--line-2); }
 .card-dip     { border-left-color: var(--accent); }
@@ -171,7 +171,7 @@ h1, h2, h3 { font-family: var(--font); line-height: 1.28; margin: 0; letter-spac
 .card-culture { border-left-color: var(--good); }
 
 .card-title { font-size: clamp(22px, 5.4vw, 28px); font-weight: 800; margin: 0 0 8px; line-height: 1.32; color: var(--ink); letter-spacing: -0.02em; }
-.speaker { font-weight: 800; font-size: 14px; color: var(--accent); margin: 0 0 10px; }
+.speaker { font-weight: 700; font-size: 13.5px; color: var(--accent); margin: 0 0 11px; }
 .situation { font-size: clamp(16px, 4vw, 18px); color: var(--ink); line-height: 1.72; margin: 0; overflow-wrap: anywhere; }
 .situation.is-quote { color: var(--ink); padding: 12px 16px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; }
 
@@ -182,10 +182,11 @@ h1, h2, h3 { font-family: var(--font); line-height: 1.28; margin: 0; letter-spac
 }
 .choice:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--surface); box-shadow: var(--shadow-s); }
 .choice:focus-visible { outline: 3px solid var(--accent-tint); outline-offset: 1px; border-color: var(--accent); }
-.choice::before { content: ""; flex: 0 0 auto; width: 9px; height: 9px; margin-top: 7px; border-radius: 50%; border: 2.5px solid var(--accent); }
+.choice::before { content: ""; flex: 0 0 auto; width: 9px; height: 9px; margin-top: 8px; border-radius: 50%; border: 2.5px solid var(--accent); background: transparent; transition: background .15s; }
+.choice:hover::before { background: var(--accent-tint); }
 .choice .c-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .choice .c-label { font-weight: 800; font-size: 17px; line-height: 1.35; color: var(--ink); }
-.choice .c-sub { font-size: 13.5px; color: var(--ink-soft); line-height: 1.55; overflow-wrap: anywhere; }
+.choice .c-sub { font-size: 14px; color: var(--ink-soft); line-height: 1.6; overflow-wrap: anywhere; }
 
 /* 인라인 결과 */
 .result { animation: rise .35s ease both; }
@@ -212,8 +213,8 @@ h1, h2, h3 { font-family: var(--font); line-height: 1.28; margin: 0; letter-spac
 .power-l { color: var(--ink-mute); font-size: 13px; letter-spacing: 0.06em; font-weight: 600; }
 .final-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 8px 0 18px; }
 .final-stats .fs { min-width: 0; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); border-radius: 11px; padding: 9px 2px; }
-.final-stats .fs-ic { font-size: 16px; }
-.final-stats .fs-v { font-weight: 800; font-size: 18px; color: var(--cc); font-variant-numeric: tabular-nums; }
+.final-stats .fs-ic { font-size: 16px; filter: grayscale(1); opacity: .85; }
+.final-stats .fs-v { font-weight: 800; font-size: 18px; color: var(--accent); font-variant-numeric: tabular-nums; }
 .final-stats .fs-l { font-size: 10.5px; color: var(--ink-mute); font-weight: 600; white-space: nowrap; letter-spacing: -0.02em; }
 .end-desc { text-align: left; color: var(--ink); font-size: clamp(15.5px, 3.9vw, 16.5px); line-height: 1.8; margin: 10px 0 0; padding-top: 16px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
 
