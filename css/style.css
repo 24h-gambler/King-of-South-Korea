@@ -123,22 +123,32 @@ h1,h2,h3 { font-family:var(--font-head); line-height:1.25; margin:0; }
 /* ============================================================
    카드 (현안 / 외교)
    ============================================================ */
-.card-screen { }
-.card-dip { border-color:color-mix(in srgb,var(--era-primary) 45%, var(--line)); }
-.dec-tag, .dip-tag { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.04em; padding:4px 12px; border-radius:999px; margin-bottom:12px; }
-.dec-tag { color:var(--era-primary); background:color-mix(in srgb,var(--era-primary) 12%, var(--paper)); border:1px solid color-mix(in srgb,var(--era-primary) 30%, var(--line)); }
-.dip-tag { color:#cfe2ff; background:color-mix(in srgb,#4ea1ff 14%, var(--paper)); border:1px solid color-mix(in srgb,#4ea1ff 34%, var(--line)); }
-.card-title { font-size:clamp(21px,5.4vw,28px); font-weight:800; margin:0 0 10px; }
+.card-dip     { border-color:color-mix(in srgb,#4ea1ff 42%, var(--line)); }
+.card-voice   { border-color:color-mix(in srgb,#f2c14e 36%, var(--line)); }
+.card-protest { border-color:color-mix(in srgb,#e0556b 42%, var(--line)); }
+.card-culture { border-color:color-mix(in srgb,#5cd6a0 36%, var(--line)); }
+
+.card-tag { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.03em; padding:4px 12px; border-radius:999px; margin-bottom:11px; border:1px solid var(--line); }
+.card-tag.decision  { color:var(--era-primary); background:color-mix(in srgb,var(--era-primary) 12%, var(--paper)); border-color:color-mix(in srgb,var(--era-primary) 30%, var(--line)); }
+.card-tag.diplomacy { color:#cfe2ff; background:color-mix(in srgb,#4ea1ff 14%, var(--paper)); border-color:color-mix(in srgb,#4ea1ff 34%, var(--line)); }
+.card-tag.voice     { color:#ffe0a3; background:color-mix(in srgb,#f2c14e 14%, var(--paper)); border-color:color-mix(in srgb,#f2c14e 32%, var(--line)); }
+.card-tag.protest   { color:#ff9aa8; background:color-mix(in srgb,#e0556b 16%, var(--paper)); border-color:color-mix(in srgb,#e0556b 36%, var(--line)); }
+.card-tag.culture   { color:#a3f0d6; background:color-mix(in srgb,#5cd6a0 14%, var(--paper)); border-color:color-mix(in srgb,#5cd6a0 32%, var(--line)); }
+
+.card-title { font-size:clamp(21px,5.4vw,28px); font-weight:800; margin:0 0 8px; }
+.speaker { font-weight:800; font-size:14px; color:var(--gold-soft); margin:0 0 8px; }
 .situation { font-size:clamp(15.5px,4vw,18px); color:var(--text); line-height:1.75; margin:0; }
 .situation.is-quote { font-style:italic; color:var(--gold-soft); padding-left:14px; border-left:3px solid var(--era-primary); }
 
 .choices { display:grid; gap:10px; margin-top:20px; }
 .choice { text-align:left; cursor:pointer; background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius-s);
-  padding:16px 18px; transition:transform .12s, border-color .2s, background .2s; display:flex; align-items:center; gap:10px; }
+  padding:15px 18px; transition:transform .12s, border-color .2s, background .2s; display:flex; align-items:flex-start; gap:10px; }
 .choice:hover { transform:translateY(-2px); border-color:var(--era-primary); background:var(--paper-3); }
 .choice:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+.choice::before { content:"›"; color:var(--era-primary); font-size:20px; font-weight:800; line-height:1.35; }
+.choice .c-body { display:flex; flex-direction:column; gap:3px; }
 .choice .c-label { font-weight:800; font-size:16.5px; }
-.choice::before { content:"›"; color:var(--era-primary); font-size:20px; font-weight:800; }
+.choice .c-sub { font-size:13px; color:var(--text-soft); line-height:1.5; }
 
 /* 인라인 결과 */
 .result { animation:rise .4s ease both; }
@@ -172,15 +182,24 @@ h1,h2,h3 { font-family:var(--font-head); line-height:1.25; margin:0; }
 .end-desc { text-align:left; color:var(--text); font-size:clamp(15px,3.9vw,16.5px); line-height:1.8; margin:8px 0 0;
   padding-top:14px; border-top:1px solid var(--line); }
 
-/* 회고: 당신 vs 실제 역사 */
-.compare { display:grid; gap:10px; }
-.cmp { background:var(--paper-2); border:1px solid var(--line); border-left:3px solid var(--era-primary); border-radius:10px; padding:12px 14px; text-align:left; }
-.cmp-era { font-family:var(--font-head); font-weight:800; font-size:15px; color:var(--gold-soft); margin-bottom:6px; }
+/* 두 개의 연대기: 당신의 나라 vs 실제 대한민국 */
+.compare { display:grid; gap:12px; }
+.cmp { text-align:left; }
+.cmp-era { font-family:var(--font-head); font-weight:800; font-size:15px; color:var(--gold-soft); margin-bottom:7px; }
 .cmp-era span { font-family:var(--font-body); font-weight:400; font-size:12px; color:var(--text-mute); }
-.cmp-you, .cmp-real { font-size:13.5px; line-height:1.65; margin-top:3px; }
-.cmp-you { color:var(--text); } .cmp-real { color:var(--text-soft); }
-.cmp-you b { color:var(--era-primary); font-size:11.5px; margin-right:5px; padding:1px 7px; border-radius:6px; background:color-mix(in srgb,var(--era-primary) 16%, transparent); }
-.cmp-real b { color:var(--text-mute); font-size:11.5px; margin-right:5px; padding:1px 7px; border-radius:6px; background:var(--paper-3); }
+.cmp-cols { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.cmp-col { background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+.cmp-col.cmp-you { border-left:3px solid var(--era-primary); }
+.cmp-col.cmp-real { border-left:3px solid var(--text-mute); }
+.cmp-h { font-size:12px; font-weight:800; margin-bottom:7px; }
+.cmp-you .cmp-h { color:var(--era-primary); }
+.cmp-real .cmp-h { color:var(--text-soft); }
+.cmp-col ul { list-style:none; margin:0; padding:0; display:grid; gap:5px; }
+.cmp-col li { font-size:12.5px; line-height:1.55; color:var(--text-soft); padding-left:11px; position:relative; }
+.cmp-col li::before { content:"·"; position:absolute; left:2px; color:var(--text-mute); font-weight:800; }
+.cmp-you li { color:var(--text); }
+.cmp-col li.none { color:var(--text-mute); }
+@media (max-width:520px){ .cmp-cols { grid-template-columns:1fr; } }
 
 .reflection-box { text-align:left; margin:16px 0; padding:20px 22px; border-radius:14px;
   background:color-mix(in srgb,var(--gold) 7%, var(--paper)); border:1px solid color-mix(in srgb,var(--gold) 26%, var(--line)); }

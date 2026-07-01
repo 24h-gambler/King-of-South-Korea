@@ -156,21 +156,39 @@
     scrollTop();
   }
 
+  // 카드 종류별 태그/스타일
+  var CARD_KIND = {
+    decision:  { cls: "",             tag: "🏛️ 국정 현안", quote: false },
+    diplomacy: { cls: "card-dip",     tag: null,           quote: true  },
+    voice:     { cls: "card-voice",   tag: "🗣️ 시민의 목소리", quote: true },
+    protest:   { cls: "card-protest", tag: "✊ 거리의 함성",   quote: true },
+    culture:   { cls: "card-culture", tag: "🎎 문화·교류",    quote: true }
+  };
+
   function renderCard(card) {
     setFooter(false);
     applyTheme(card.era);
-    var isDip = card.type === "diplomacy";
+    var kind = CARD_KIND[card.type] || CARD_KIND.decision;
+    var tagText = kind.tag || ("📨 " + (card.country || "외교"));
+    var speaker = card.speaker ? '<div class="speaker">' + esc(card.speaker) + '</div>' : "";
+
     var choices = card.choices.map(function (c, i) {
-      return '<button class="choice" data-i="' + i + '"><span class="c-label">' + esc(c.label) + '</span></button>';
+      return '<button class="choice" data-i="' + i + '">' +
+          '<span class="c-body">' +
+            '<span class="c-label">' + esc(c.label) + '</span>' +
+            (c.sub ? '<span class="c-sub">' + esc(c.sub) + '</span>' : "") +
+          '</span>' +
+        '</button>';
     }).join("");
 
     app.innerHTML = '' +
       hudHTML() +
       '<section class="screen card-screen">' +
-        '<div class="card ' + (isDip ? "card-dip" : "") + '">' +
-          (isDip ? '<div class="dip-tag">📨 ' + esc(card.country) + '</div>' : '<div class="dec-tag">국가 현안</div>') +
+        '<div class="card ' + kind.cls + '">' +
+          '<div class="card-tag ' + card.type + '">' + tagText + '</div>' +
           '<h2 class="card-title">' + esc(card.title) + '</h2>' +
-          '<p class="situation' + (isDip ? ' is-quote' : '') + '">' + esc(card.situation) + '</p>' +
+          speaker +
+          '<p class="situation' + (kind.quote ? ' is-quote' : '') + '">' + esc(card.situation) + '</p>' +
           '<div class="choices" id="choices">' + choices + '</div>' +
           '<div class="result" id="result" hidden></div>' +
         '</div>' +
@@ -290,15 +308,22 @@
         '<div class="fs-l">' + esc(SMETA[k].label) + '</div></div>';
     }).join("");
 
-    // 시대별 회고: 실제 역사 vs 당신의 선택
+    // 전체 연대기 대조: 당신의 나라 vs 실제 대한민국 (처음부터 끝까지)
+    var RT = M.realTimeline || [];
     var compare = M.eras.map(function (e, i) {
-      var picks = state.log.filter(function (l) { return l.era === e.id; })
-        .map(function (l) { return esc(l.label); }).join(" · ");
-      var real = (M.realHistory[i] && M.realHistory[i].line) || "";
+      var picks = state.log.filter(function (l) { return l.era === e.id; });
+      var youList = picks.length
+        ? picks.map(function (l) { return '<li>' + esc(l.label) + '</li>'; }).join("")
+        : '<li class="none">—</li>';
+      var rt = RT[i] || {};
+      var lines = rt.lines || (M.realHistory && M.realHistory[i] ? [M.realHistory[i].line] : []);
+      var realList = lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join("");
       return '<div class="cmp">' +
           '<div class="cmp-era">' + esc(e.name) + ' <span>' + esc(e.years) + '</span></div>' +
-          '<div class="cmp-you"><b>당신의 선택</b> ' + (picks || "—") + '</div>' +
-          '<div class="cmp-real"><b>실제 역사</b> ' + real + '</div>' +
+          '<div class="cmp-cols">' +
+            '<div class="cmp-col cmp-you"><div class="cmp-h">🏳️ 당신의 ' + esc(state.nation) + '</div><ul>' + youList + '</ul></div>' +
+            '<div class="cmp-col cmp-real"><div class="cmp-h">🇰🇷 실제 대한민국</div><ul>' + realList + '</ul></div>' +
+          '</div>' +
         '</div>';
     }).join("");
 
@@ -315,8 +340,8 @@
         '</div>' +
 
         '<div class="card" style="margin-top:14px">' +
-          '<h3 class="title-m center" style="margin-bottom:4px">당신의 길, 그리고 실제 역사</h3>' +
-          '<p class="muted center" style="font-size:13px;margin-bottom:14px">당신이 만든 나라와, 진짜 대한민국이 걸어온 길</p>' +
+          '<h3 class="title-m center" style="margin-bottom:4px">두 개의 연대기</h3>' +
+          '<p class="muted center" style="font-size:13px;margin-bottom:14px">처음부터 끝까지 — 당신이 만든 나라와, 진짜 대한민국이 걸어온 길</p>' +
           '<div class="compare">' + compare + '</div>' +
         '</div>' +
 
